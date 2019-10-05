@@ -141,8 +141,30 @@ test("Throwing computations will continue if told to resume", t => {
   });
 });
 
-// test("Chain accepts promises", () => {});
+test("Chain accepts promises", t => {
+  const task = Task<number>(f => {
+    f(42);
+  })
+    .chain(x => new Promise<number>(f => setTimeout(() => f(x + 8), 0)))
+    .chain(x => Task(f => queueMicrotask(() => f(x + 50))));
 
-// test("Chain accepts tasks", () => {});
+  task.then(option => {
+    t.equal(option["value"], 100);
+    t.done();
+  });
+});
 
-// test("Task execution is sequential", () => {});
+test("Task execution is sequential", t => {
+  const task = Task<number>(f => {
+    f(42);
+  })
+    .chain(x => Task<number>(f => setTimeout(() => f(x / 2), 100)))
+    .chain(x => Task<number>(f => queueMicrotask(() => f(x + 5))))
+    .chain(x => Task<number>(f => setTimeout(() => f(x + 5), 0)))
+    .map(x => x + 11);
+
+  task.then(option => {
+    t.equal(option["value"], 42);
+    t.done();
+  });
+});

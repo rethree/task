@@ -20,19 +20,23 @@ export type Options<a> =
   | Completion<a> & { tag: "Completed" };
 
 export type TaskDef<a> = {
-  map: <b, c extends [Func<a, b>, true?]>(
+  readonly map: <b, c extends [Func<a, b>, true?]>(
     ...args: c
   ) => TaskDef<c[1] extends Nil ? ReturnType<c[0]> : Failure>;
-  chain: <b, c extends [Func<a, TaskDef<b>>, true?]>(
+  readonly chain: <b, c extends [Func<a, TaskDef<b> | PromiseLike<b>>, true?]>(
     ...args: c
-  ) => c[1] extends Nil
-    ? ReturnType<c[0]>
-    : TaskDef<(ReturnType<c[0]> extends TaskDef<infer b> ? b : _) | Failure>;
-  then: <b>(done: Func<Options<a>, b>) => void;
+  ) => TaskDef<
+    ReturnType<c[0]> extends TaskDef<infer b> | PromiseLike<infer b>
+      ? c[1] extends Nil
+        ? b
+        : b | Failure
+      : _
+  >;
+  readonly then: <b>(done: Func<Options<a>, b>) => void;
 };
 
 export type Thenable<a> = PromiseLike<a>;
 
 export type Computation =
-  | [Func<_, TaskDef<_>>, true, true | Nil]
+  | [Func<_, TaskDef<_> | PromiseLike<_>>, true, true | Nil]
   | [Func<_, _>, false, true | Nil];

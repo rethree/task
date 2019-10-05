@@ -1,13 +1,13 @@
+import { exec as interpret } from "./interpreter";
 import { Option } from "./options";
 import { Computation, Func, Options, TaskDef, _ } from "./types";
-import { exec as interpret } from "./interpreter";
 
 const task = <a>(
   action: (fa: Func<_, void>) => void,
   q: Computation[]
 ): TaskDef<a> => ({
-  map: (ab, resume) => task(action, [...q, [ab, false, resume]]),
-  chain: (atb, resume) => task(action, [...q, [atb, true, resume]]),
+  map: (ab, resume?) => task(action, [...q, [ab, false, resume]]),
+  chain: (atb, resume?) => task(action, [...q, [atb, true, resume]]),
   then(done) {
     try {
       action(x => interpret(x, q, done));
