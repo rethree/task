@@ -109,7 +109,37 @@ test("Task will execute mixed-schedule computations", t => {
   });
 });
 
-test("Throwing synchronous computations will make task jump to completion with fault", t => {
+test("Throwing initial computations will make task jump to completion carrying fault with it", t => {
+  const task = Task<number>(f => {
+    throw "sup";
+    f(42);
+  }).map(x => x + 50);
+
+  task.then(option => {
+    t.equal(option["fault"], "sup");
+    t.done();
+  });
+});
+
+test("Throwing chained task will make task jump to completion carrying fault with it", t => {
+  const task = Task<number>(f => {
+    f(42);
+  })
+    .chain(x =>
+      Task<number>(f => {
+        throw "sup";
+        f(x + 42);
+      })
+    )
+    .map(x => x + 50);
+
+  task.then(option => {
+    t.equal(option["fault"], "sup");
+    t.done();
+  });
+});
+
+test("Throwing synchronous computations will make task jump to completion carrying fault with it", t => {
   const task = Task<number>(f => {
     f(42);
   })
@@ -130,13 +160,13 @@ test("Throwing computations will continue if told to resume", t => {
     f(42);
   })
     .chain(x => {
-      throw "sup";
+      throw 10;
       return Task<number>(f => f(x + 8));
     }, true)
-    .map(x => (isFaulted(x) ? x.fault : x + 50));
+    .map(x => (isFaulted(x) ? x.fault + 32 : 0));
 
   task.then(option => {
-    t.equal(option["fault"], "sup");
+    t.equal(option["value"], 42);
     t.done();
   });
 });
@@ -158,7 +188,7 @@ test("Task execution is sequential", t => {
   const task = Task<number>(f => {
     f(42);
   })
-    .chain(x => Task<number>(f => setTimeout(() => f(x / 2), 100)))
+    .chain(x => Task<number>(f => setTimeout(() => f(x / 2), 1000)))
     .chain(x => Task<number>(f => queueMicrotask(() => f(x + 5))))
     .chain(x => Task<number>(f => setTimeout(() => f(x + 5), 0)))
     .map(x => x + 11);

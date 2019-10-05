@@ -1,15 +1,15 @@
 import { ofType, unionize } from "unionize";
 import { Completion, Failure, Options, _ } from "./types";
 
-export const Option = <a>() =>
+export const OptionOf = <a>() =>
   unionize({
     Faulted: ofType<Failure>(),
     Completed: ofType<Completion<a>>()
   });
 
-export const O = Option();
+export const Option = OptionOf();
 
-export const isFaulted = (x: any): x is Failure => Option().is.Faulted(x);
+export const isFaulted = (x: any): x is Failure => OptionOf().is.Faulted(x);
 
 export const allCompleted = <a>(
   x: Options<a>[]

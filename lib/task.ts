@@ -1,24 +1,24 @@
 import { exec as interpret } from "./interpreter";
-import { Option } from "./options";
+import { OptionOf } from "./options";
 import { Computation, Func, Options, TaskDef, _ } from "./types";
 
 const task = <a>(
   action: (fa: Func<_, void>) => void,
-  q: Computation[]
+  queue: Computation[]
 ): TaskDef<a> => ({
-  map: (ab, resume?) => task(action, [...q, [ab, false, resume]]),
-  chain: (atb, resume?) => task(action, [...q, [atb, true, resume]]),
+  map: (ab, resume?) => task(action, [...queue, [ab, resume]]),
+  chain: (atb, resume?) => task(action, [...queue, [atb, resume]]),
   then(done) {
     try {
-      action(x => interpret(x, q, done));
+      action(x => interpret(x, queue, done));
     } catch (fault) {
-      done(Option<a>().Faulted({ fault }));
+      done(OptionOf<a>().Faulted({ fault }));
     }
   }
 });
 
-export const Task = <a>(action: (fa: (x: a) => void) => void): TaskDef<a> => {
-  const option = Option<a>();
+export const Task = <a>(action: (fa: Func<a, void>) => void): TaskDef<a> => {
+  const option = OptionOf<a>();
   return {
     ...task(action, []),
     then: <b>(done: Func<Options<a>, b>) => {

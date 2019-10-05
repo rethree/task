@@ -1,25 +1,32 @@
-import { O } from "./options";
-import { Computation, Func, Options, _ } from "./types";
+import { Option, OptionOf } from "./options";
+import { Computation, Func, Options, _, Thenable } from "./types";
+
+const tryCatch = <a, b>(f: Func<a, b | Thenable<b>>) => async (
+  x: a
+): Promise<Options<b>> => {
+  const option = OptionOf<b>();
+  try {
+    const value = (await f(x)) as any;
+    return option.match(value, {
+      Completed: _ => value,
+      Faulted: _ => value,
+      default: _ => option.Completed({ value })
+    });
+  } catch (fault) {
+    return option.Faulted({ fault, meta: { args: x } });
+  }
+};
 
 export const exec = async (
   x: _,
-  [[f, blocking, resumable], ...fs]: Computation[],
+  [[f, resumable], ...fs]: Computation[],
   done: Func<Options<_>, _>
 ) => {
-  try {
-    const something = f(x);
-    const maybeOption = blocking ? await something : (something as any);
-    const active = fs.length > 0;
+  const active = fs.length > 0;
+  const option = await tryCatch(f)(x);
 
-    O.match(maybeOption, {
-      Faulted: _ =>
-        resumable && active ? exec(maybeOption, fs, done) : done(maybeOption),
-      Completed: ({ value }) =>
-        active ? exec(value, fs, done) : done(maybeOption),
-      default: value =>
-        active ? exec(value, fs, done) : done(O.Completed({ value }))
-    });
-  } catch (fault) {
-    done(O.Faulted({ fault }));
-  }
+  Option.match(option, {
+    Faulted: _ => (resumable && active ? exec(option, fs, done) : done(option)),
+    Completed: ({ value }) => (active ? exec(value, fs, done) : done(option))
+  });
 };
