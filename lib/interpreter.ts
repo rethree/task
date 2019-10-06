@@ -1,9 +1,9 @@
 import { Option, OptionOf } from "./options";
-import { Computation, Func, Options, _ } from "./types";
+import { Computation, Func, Options, _, Thenable } from "./types";
 
-const join = (x: any) => (Option.is.Completed(x) ? x.value : x);
+const { Completed, Faulted } = Option;
 
-export const exec = <a, b>(
+export const init = <a, b>(
   [[f], ...fs]: Computation[],
   done: Func<Options<a>, b>
 ) => {
@@ -17,26 +17,31 @@ export const exec = <a, b>(
   }
 };
 
-const fold = (
-  x: _,
+const fold = async (
+  maybeThenable: _ | Thenable<_>,
   [[f, resumable], ...fs]: Computation[],
   done: Func<Options<_>, _>
 ) => {
   const active = fs.length > 0;
-  const { Completed, Faulted } = Option;
-  const c =
-    typeof x === "object" && "then" in (x as any)
-      ? x
-      : Promise.resolve(join(x));
+  try {
+    const x = await maybeThenable;
+    const something = (await f(x)) as any;
 
-  (c as PromiseLike<_>)["then"](x => {
-    try {
-      console.log(x);
-      const value = f(x);
-      active ? fold(value, fs, done) : done(Completed({ value }));
-    } catch (fault) {
-      const failure = Faulted({ fault });
-      resumable ? fold(failure, fs, done) : done(failure);
-    }
-  });
+    Option.match(something, {
+      Completed: ({ value }) => {
+        active ? fold(value, fs, done) : done(something);
+      },
+      Faulted: _ => {
+        active && resumable ? fold(something, fs, done) : done(something);
+      },
+      default: _ => {
+        active
+          ? fold(something, fs, done)
+          : done(Completed({ value: something }));
+      }
+    });
+  } catch (fault) {
+    const failure = Faulted({ fault });
+    active && resumable ? fold(failure, fs, done) : done(failure);
+  }
 };

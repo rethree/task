@@ -15,19 +15,21 @@
   "scripts": {
     "lint": "eslint -c .eslintrc.js lib/**/*.ts",
     "build": "tsc -p tsconfig.build.json",
-    "test": "tap --100 tests/**/*.test.ts",
-    "test:dev": "tap --100 tests/**/*.test.ts",
-    "posttest": "tap --coverage-report=text-lcov | coveralls",
-    "ct": "tap --watch --changed --100"
+    "test:dev": "yarn test --clearCache --onlyChanged",
+    "test": "jest --testPathPattern tests/*.test.{ts,tsx}",
+    "test:cov": "yarn test --coverage"
   },
   "devDependencies": {
+    "@types/jest": "^24.0.18",
+    "@types/node": "^12.7.11",
     "@typescript-eslint/eslint-plugin": "^2.0.0",
     "@typescript-eslint/parser": "^2.0.0",
     "coveralls": "^3.0.6",
     "delay": "^4.3.0",
     "eslint": "^6.0.1",
+    "jest": "^24.9.0",
     "range": "^0.0.3",
-    "tap": "^14.6.1",
+    "ts-jest": "^24.1.0",
     "ts-node": "^8.3.0",
     "typescript": "3.6",
     "unionize": "^3.0.2"

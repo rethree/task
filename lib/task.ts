@@ -1,4 +1,4 @@
-import { exec as runInterpreter } from "./interpreter";
+import { init as runInterpreter } from "./interpreter";
 import { Computation, Func, TaskDef } from "./types";
 
 const task = <a>(...queue: Computation[]): TaskDef<a> => ({
