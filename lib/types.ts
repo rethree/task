@@ -19,20 +19,15 @@ export type Options<a> =
   | Failure & { tag: "Faulted" }
   | Completion<a> & { tag: "Completed" };
 
+export type Thenable<a> = PromiseLike<a> | TaskDef<a>;
+
+export type Next<a> = Func<Options<a> | a, void>;
+
+export type Action<a> = Func<Next<a>, void>;
+
 export type TaskDef<a> = {
-  map: <b, c extends [Func<a, b>, true?]>(
-    ...args: c
-  ) => TaskDef<c[1] extends Nil ? ReturnType<c[0]> : Failure>;
-  chain: <b, c extends [Func<a, TaskDef<b>>, true?]>(
-    ...args: c
-  ) => c[1] extends Nil
-    ? ReturnType<c[0]>
-    : TaskDef<(ReturnType<c[0]> extends TaskDef<infer b> ? b : _) | Failure>;
-  then: <b>(done: Func<Options<a>, b>) => void;
+  readonly map: <b>(xf: Func<a, b>) => TaskDef<b>;
+  readonly chain: <b>(xf: Func<a, Thenable<b>>) => TaskDef<b>;
+  readonly resume: <b>(xf: Func<a | Failure, b | Thenable<b>>) => TaskDef<b>;
+  readonly then: (done: Func<Options<a>, void>) => void;
 };
-
-export type Thenable<a> = PromiseLike<a>;
-
-export type Computation =
-  | [Func<_, TaskDef<_>>, true, true | Nil]
-  | [Func<_, _>, false, true | Nil];

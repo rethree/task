@@ -1,42 +1,33 @@
-import { test } from 'tap';
-import { isFaulted, Option, allCompleted } from '../lib';
-import { Options } from '../lib/types';
+import { isFaulted, isOption, Option } from "../lib";
 
-const { Faulted, Completed } = Option();
+const { Faulted, Completed } = Option;
 
-test('isFaulted detects faulted variant', async t => {
-  const fault = Faulted({ fault: Error('42') });
-
-  t.true(isFaulted(fault));
+test("isOption recognizes failures", async () => {
+  const x = isOption(Faulted({ fault: 42 }));
+  expect(x).toBe(true);
 });
 
-test('allCompleted detects failures withing mixed results', async t => {
-  const xs = [Faulted({ fault: Error('42') }), Completed({ value: 42 })];
-
-  t.false(allCompleted(xs));
+test("isOption recognizes completions", async () => {
+  const x = isOption(Completed({ value: 42 }));
+  expect(x).toBe(true);
 });
 
-test('allCompleted detects failures withing failed results', async t => {
-  const xs = [Faulted({ fault: Error('42') }), Faulted({ fault: 42 })];
-
-  t.false(allCompleted(xs));
+test("isOption recognizes non-options", async () => {
+  const x = isOption(42);
+  expect(x).toBe(false);
 });
 
-test('allCompleted detects complete-only results', async t => {
-  const xs: Options<any>[] = [
-    Completed({ value: '9001' }),
-    Completed({ value: 42 })
-  ];
-
-  t.true(allCompleted(xs));
+test("isFaulted recognizes failures", async () => {
+  const x = isFaulted(Faulted({ fault: 42 }));
+  expect(x).toBe(true);
 });
 
-test('Options are matched structurally', async t => {
-  const optsX = Option();
-  const optsY = Option();
-  const x = optsX.Completed({ value: 4 });
-  const y = optsY.Completed({ value: 4 });
+test("isFaulted recognizes completions", async () => {
+  const x = isFaulted(Completed({ value: 42 }));
+  expect(x).toBe(false);
+});
 
-  t.true(optsY.is.Completed(x));
-  t.true(optsY.is.Completed(y));
+test("isFaulted recognizes non-options", async () => {
+  const x = isFaulted(42);
+  expect(x).toBe(false);
 });

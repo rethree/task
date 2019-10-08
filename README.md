@@ -1,174 +1,93 @@
-# @recubed/async
-
-[![Build Status](https://travis-ci.org/rethree/async.svg?branch=master)](https://travis-ci.org/rethree/async)
-[![CodeFactor](https://www.codefactor.io/repository/github/rethree/async/badge)](https://www.codefactor.io/repository/github/rethree/async)
-[![Coverage Status](https://coveralls.io/repos/github/rethree/async/badge.svg?branch=master)](https://coveralls.io/github/rethree/async?branch=master)
+# @recubed/task
+[![Build Status](https://travis-ci.org/rethree/task.svg?branch=master)](https://travis-ci.org/rethree/task)
+[![CodeFactor](https://www.codefactor.io/repository/github/rethree/task/badge)](https://www.codefactor.io/repository/github/rethree/task)
+[![Coverage Status](https://coveralls.io/repos/github/rethree/task/badge.svg?branch=master)](https://coveralls.io/github/rethree/task?branch=master)
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
 [![dependencies
-Status](https://david-dm.org/rethree/async/status.svg)](https://david-dm.org/rethree/async)
-[![devDependencies Status](https://david-dm.org/rethree/async/dev-status.svg)](https://david-dm.org/rethree/async?type=dev)
+Status](https://david-dm.org/rethree/task/status.svg)](https://david-dm.org/rethree/task)
+[![devDependencies Status](https://david-dm.org/rethree/task/dev-status.svg)](https://david-dm.org/rethree/task?type=dev)
 [![Built with Spacemacs](https://cdn.rawgit.com/syl20bnr/spacemacs/442d025779da2f62fc86c2082703697714db6514/assets/spacemacs-badge.svg)](http://spacemacs.org)
 
-Minimal set of **functional async primitives**.
+ Tiny, monadic, asynchronous primitive. Ressembles the native `Promise` constructor but differs where that one is considered lacking (by the author, obviously), namely:
 
-A set of functional utilities designed with purity, laziness, safety and simplicity in mind.
-Mostly here to support my incoming `Redux` `REST` client but can definitely be used as a stand-alone utility library.
+#### Laziness 
+`Task`'s can be mapped and nested without any computation being triggered and will only fire  computations when `then` is called.
 
-##### Option
+####  Error handling 
+`Task`'s do not reject but wrap errors in a variant `Option` type. This approach can help reducing the unhandled rejection issue, minimize forking and simplify mental processing of asynchronous pipelines. In addition, `Task`'s will not proceed with the execution  but jump to the completion handler if an error is encountered.
 
-`Failure | Completed a`
-
-The very basic type `Task`'s operate on. Represents two possible results - completion and failure, forming a tagged union over a `tag` property. Can be created with `Faulted` and `Completed` constructors. Unless manually crafted will always be wrapped in an array to ensure consistent continuation handling.
-
-##### Task
-
-`(Thenable | Lazy Promise) a -> Lazy Thenable [ Completed a | Faulted ]`
-
-Task constructor accepts both eager and lazy promises. It will return a `thunk`-ed version of the promise regardless of the input type. Lazy ones will not get started until task function returns.
+`Task`'s can be created similarly to promises, except for that you are not given the rejection callback reference. 
 
 ```typescript
-// Creation
-const task = Task(Promise.resolve(42));
+const task = Task(f => {
+  setTimeout(() => f(42), 0);
+});
 
-// or
-const task = Task(() => Promise.resolve(42));
-// or
-const task = complete(42);
-// or
-const task = complete(Promise.resolve(42));
-
-task().then(console.log);
-// [ { tag: 'completed', value: 42, meta: { args: [] } } ]
-
-task().then(console.log);
-// [ { tag: 'completed', value: 42, meta: { args: [] } } ]
+//yes, tasks are awaitable!
+const x = await task;
+console.log(x)
+// { tag: 'completed', value: 42 }
 ```
+Completed and faulted `Task`'s can be created using the `complete` and `fail` unary constructors respectively.
 
-Unlike promises, `Task`s do not reject. Rejections are handled internally and wrapped in `Faulted` option. This brings some advantages to the table, i.e. purity, branching reduction and unhandled rejections problem trivialisation.
-
-```typescript
-const task = Task(() => Promise.reject(42));
-task().then(console.log);
-// [ { tag: 'faulted', fault: 42, meta: { args: [] } } ]
-```
-
-Lazy tasks may optionally accept arguments. These will be returned within the result object, under `meta.args`. May turn out useful in distributed context where promises are passed around and it is not immediately obvious what the failure reason was for the consuming code. Think of complex effectful procedures, i.e. `Redux-Saga` fetching `REST` resources.
+`Task` definition allows 'free' (lazy) mapping (`raw value -> raw value`), chaining (`raw value -> Task | Promise`) and mixing these two. functions are guaranteed to be run sequentially (in declaration order) whether they are asynchronous or not. 
 
 ```typescript
-const task = Task(url => fetch(url).then(resp => resp.json()))(
-  'https://non.existent'
-);
-task().then(([fault]) => console.log(fault.meta.args));
-// [ 'https://non.existent' ]
-```
+const task = Task<number>(f => {
+  f(42);
+})
+  .chain(x => Task<number>(f => setTimeout(() => f(x + 8), 0)))
+  .map(x => x + 25)
+  .chain(x => Promise.resolve(x + 5)) 
+  .chain(x => Task<number>(f => setTimeout(() => f(x + 20), 0)));
 
-Additionally, `Task` module exposes a set of constructors to simplify task creation.
+const x = await task;
+console.log(x)
+// { tag: 'completed', value: 100 }
+```   
 
-```typescript
-// Create a task of 'faulted' type
-const task = fail(42);
-task().then(console.log);
-// [ { tag: 'faulted', fault: 42, meta: { args: [] } } ]
-
-// Create a task from a 'completed' option
-const task = from(Completed(42));
-task().then(console.log);
-// [ { tag: 'completed', value: 42, meta: {} } ]
-
-// Create a task from a 'faulted' option
-const task = from(Faulted(42));
-task().then(console.log);
-// [ { tag: 'completed', fault: 42, meta: {} } ]
-```
-
-##### Parallel
-
-`[ Lazy Thenable Completed a | Faulted ] -> Lazy Thenable [ Completed a | Faulted ]`
-
-The 'Parallel' module is a functional wrapper over native `Promise.all` api, _ceteris paribus_. Design approach is similar to that of `Task`, except that it only accepts `Task`s as input parameters. `TypeScript` signature restricts it to operate on `thunk`-ed, `Option`-returning promises. It is advised to only use built-in `Task` constructors for the input functions. No guarantees in regards to control flow (read - rejections) are given otherwise. This will be optimised once `Promise.allSettled` lands in official runtimes.
+if a `Task` encounters a throwing computation it will skip further processing and jump to the final callback carrying the 
+error wrapped in an `Option` variant type
 
 ```typescript
-const all = Parallel(complete(42), fail(9001));
-all().then(console.log);
-// [ { tag: 'completed', value: 42, meta: { args: [] } },
-//   { tag: 'faulted', fault: 9001, meta: { args: [] } } ]
-```
+const task = Task<number>(f => {
+  f(42);
+})
+  .chain(x => { throw Error(42) }) 
+  .map(x => x + 25);
 
-##### Continuation
+const x = await task;
+console.log(x)
+// { tag: 'completed', value: { message: "42" } }
+```   
 
-`Continuation Task a -> Continuation Task b`
+This behaviour can be explicitlly amended by calling the `resume` method (`raw value | Failure -> raw value | Task | Promise`), 
 
-`Task`'s themselves do not modify the native promise continuation flow meaning once `then` method of a completed task is entered we're back in the world of rejections. This is where `Continuation` comonad comes handy as it:
-
-- will return the first faulty set of results to the caller (while ignoring further continuations);
-- won't expose native `then` method until the last continuation returns;
-- ensures options are used as result types (at `TypeScript` level);
-
-`map: Completion a -> Lazy Thenable [ Completed a | Faulted ]`
 
 ```typescript
-const piped = await Continuation(complete(10))
-  .map(_ => fail(12))
-  .map(_ => complete(9001))();
-
-console.log(piped);
-// [ { tag: 'faulted', fault: 12, meta: { args: [] } } ]
-```
-
-Because `map` is eager (will trigger continuations even if the last one does not return)...
-
-```typescript
-Continuation(complete(10))
-  .map(_ => {
-    console.log(42);
-    return complete(42);
+const task = Task<number>(f => {
+  f(42);
+})
+  .chain(x => {
+    throw 10;
+    return Task<number>(f => f(x + 8));
   })
-  .map(_ => {
-    console.log(9001);
-    return fail(9001);
-  });
-// 42
-// 9001
-```
+  .resume(x => (isFaulted(x) ? x.fault + 32 : 0));
 
-...Continuation does also expose (lazy) `extend` method.
+const x = await task;
+console.log(x)
+// { tag: 'faulted', fault: { message: "42" ... } }
+```   
 
-```typescript
-const piped = await Continuation(complete(10))
-  .extend(wa => wa().then(apply(([x]) => Task(Promise.resolve(x.value + 5)))))
-  .extend(wa => wa().then(apply(([x]) => Task(Promise.resolve(x.value + 6)))))
-  .extend(wa => wa().then(apply(([x]) => complete(x.value * 2))))();
-
-console.log(piped);
-// [ { tag: 'completed', value: 42, meta: { args: [] } } ]
-```
-
-This is quite verbose, I admit... Without the `apply` helper it would get even longer in addition to having some nasty typings problems. Unless a full control of current calculation context is required `pipe` should be used instead...
+Last, but not least `Task`'s can run tasks in "parallel" or, at least, concurrently. To be more precise, `Parallel`'ed tasks will be started sequentially and run as simultaneously as allowed by the underlying hardware, os and JavaScript runtime. `Parallel` task will be considered `faulted` if at least one of the atomic `Task`'s
+fails. Unlike `Promise.all` it will continue running until all the tasks are completed and return a list of results.
 
 ```typescript
-const piped = await Continuation(complete(10))
-  .extend(pipe(([x]) => Task(Promise.resolve(x.value + 6))))
-  .extend(pipe(([x]) => Task(Promise.resolve(x.value + 5))))
-  .extend(pipe(([x]) => Task(Promise.resolve(x.value * 2))))();
+const option = await Parallel(complete(10), fail(42));
 
-console.log(piped);
-// 42
+console.log(option)
+// { tag: 'faulted', fault: [ { tag: 'faulted', fault: 42 }, tag: 'completed', value: 10 } ] }
 ```
+#### Incoming
 
-...for convenience `pipe` is also exposed as a chainable method on `Continuation` object instances.
-
-```typescript
-const piped = await Continuation(complete(10))
-  .pipe(([x]) => Task(Promise.resolve(x.value + 6)))
-  .pipe(([x]) => Task(Promise.resolve(x.value + 5)))
-  .pipe(([x]) => Task(Promise.resolve(x.value * 2)))();
-
-console.log(piped);
-// 42
-```
-
-#### incoming
-
-- Free Continuation (trampoline);
-- Retry;
-- Race;
+Standard operators, `race` is the first to focus on.

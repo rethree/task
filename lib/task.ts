@@ -1,34 +1,32 @@
-import { Option } from "./options";
-import { Computation, Func, Options, TaskDef, _ } from "./types";
-import { exec as interpret } from "./interpreter";
+import { next } from './next';
+import { isOption, OptionOf } from './options';
+import { Action, Func, TaskDef } from './types';
 
-const task = <a>(
-  action: (fa: Func<_, void>) => void,
-  q: Computation[]
-): TaskDef<a> => ({
-  map: (ab, resume) => task(action, [...q, [ab, false, resume]]),
-  chain: (atb, resume) => task(action, [...q, [atb, true, resume]]),
+const task = <a>(action: Action<a>): TaskDef<a> => ({
+  map: xf => task(fb => next(action, xf, fb)),
+  chain: xf => task(fb => next(action, xf, fb as any)),
+  resume: xf => task(fb => next(action, xf, fb, true)),
   then(done) {
+    const { Completed, Faulted } = OptionOf<a>();
     try {
-      action(x => interpret(x, q, done));
+      action((value: any) => {
+        isOption<a>(value) ? done(value) : done(Completed({ value }));
+      });
     } catch (fault) {
-      done(Option<a>().Faulted({ fault }));
+      done(Faulted({ fault }));
     }
   }
 });
 
-export const Task = <a>(action: (fa: (x: a) => void) => void): TaskDef<a> => {
-  const option = Option<a>();
-  return {
-    ...task(action, []),
-    then: <b>(done: Func<Options<a>, b>) => {
-      try {
-        action(value => {
-          done(option.Completed({ value }));
-        });
-      } catch (fault) {
-        done(option.Faulted({ fault }));
-      }
-    }
-  };
-};
+export const complete = <a>(x: a) => task<a>(f => f(x));
+
+export const fail = <a>(fault: a) =>
+  task<a>(f =>
+    f(
+      OptionOf<a>().Faulted({
+        fault
+      })
+    )
+  );
+
+export const Task = <a>(action: (fa: Func<a, void>) => void) => task(action);

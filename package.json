@@ -1,7 +1,7 @@
 {
-  "name": "@recubed/async",
-  "version": "0.1.4",
-  "description": "Functional async primitives",
+  "name": "@recubed/task",
+  "version": "0.0.1",
+  "description": "Functional promise",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "tanfonto <tanfonto@pm.me>",
@@ -12,22 +12,24 @@
   "publishConfig": {
     "access": "public"
   },
+  "repository": "https://github.com/rethree/task",
   "scripts": {
     "lint": "eslint -c .eslintrc.js lib/**/*.ts",
     "build": "tsc -p tsconfig.build.json",
-    "test": "tap --100 tests/**/*.test.ts",
-    "test:dev": "tap --100 tests/**/*.test.ts",
-    "posttest": "tap --coverage-report=text-lcov | coveralls",
-    "ct": "tap --watch --changed --100"
+    "test": "jest",
+    "test:cov": "yarn test --coverage && cat ./coverage/lcov.info | coveralls"
   },
   "devDependencies": {
+    "@types/jest": "^24.0.18",
+    "@types/node": "^12.7.11",
     "@typescript-eslint/eslint-plugin": "^2.0.0",
     "@typescript-eslint/parser": "^2.0.0",
     "coveralls": "^3.0.6",
     "delay": "^4.3.0",
     "eslint": "^6.0.1",
+    "jest": "^24.9.0",
     "range": "^0.0.3",
-    "tap": "^14.6.1",
+    "ts-jest": "^24.1.0",
     "ts-node": "^8.3.0",
     "typescript": "3.6",
     "unionize": "^3.0.2"
