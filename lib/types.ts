@@ -1,19 +1,10 @@
 export type _ = unknown;
-export type Nil = undefined;
-
-export type StrMap<a = any> = {
-  readonly [key: string]: a;
-};
 
 export type Func<a, b> = (x: a) => b;
 
-export type Meta = {
-  readonly meta: StrMap;
-};
+export type Failure = { fault: any };
 
-export type Failure = { fault: any; meta?: StrMap };
-
-export type Completion<a> = { value: a; meta?: StrMap };
+export type Completion<a> = { value: a };
 
 export type Options<a> =
   | Failure & { tag: "Faulted" }

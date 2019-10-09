@@ -16,7 +16,7 @@ Status](https://david-dm.org/rethree/task/status.svg)](https://david-dm.org/reth
 ####  Error handling 
 `Task`'s do not reject but wrap errors in a variant `Option` type. This approach can help reducing the unhandled rejection issue, minimize forking and simplify mental processing of asynchronous pipelines. In addition, `Task`'s will not proceed with the execution  but jump to the completion handler if an error is encountered.
 
-`Task`'s can be created similarly to promises, except for that you are not given the rejection callback reference. 
+`Task`'s can be created similarly to promises, except that you are not given the rejection callback reference. 
 
 ```typescript
 const task = Task(f => {
@@ -28,9 +28,9 @@ const x = await task;
 console.log(x)
 // { tag: 'completed', value: 42 }
 ```
-Completed and faulted `Task`'s can be created using the `complete` and `fail` unary constructors respectively.
+Completed and faulted `Task`'s can also be created using the `complete` and `fail` unary constructors respectively.
 
-`Task` definition allows 'free' (lazy) mapping (`raw value -> raw value`), chaining (`raw value -> Task | Promise`) and mixing these two. functions are guaranteed to be run sequentially (in declaration order) whether they are asynchronous or not. 
+`Task` definition allows 'free' (lazy) mapping (`raw value -> raw value`), chaining (`raw value -> Task | Promise`) and mixing these two. Functions are guaranteed to be run sequentially (in declaration order) whether they are asynchronous or not. 
 
 ```typescript
 const task = Task<number>(f => {
@@ -46,7 +46,7 @@ console.log(x)
 // { tag: 'completed', value: 100 }
 ```   
 
-if a `Task` encounters a throwing computation it will skip further processing and jump to the final callback carrying the 
+Once `Task` encounters throwing computation it will skip further processing and jump to the final callback carrying the 
 error wrapped in an `Option` variant type
 
 ```typescript
@@ -58,7 +58,7 @@ const task = Task<number>(f => {
 
 const x = await task;
 console.log(x)
-// { tag: 'completed', value: { message: "42" } }
+// { tag: 'faulted', fault: { message: "42" } }
 ```   
 
 This behaviour can be explicitlly amended by calling the `resume` method (`raw value | Failure -> raw value | Task | Promise`), 
@@ -76,10 +76,10 @@ const task = Task<number>(f => {
 
 const x = await task;
 console.log(x)
-// { tag: 'faulted', fault: { message: "42" ... } }
+// { tag: 'completed', value: 42 } }
 ```   
 
-Last, but not least `Task`'s can run tasks in "parallel" or, at least, concurrently. To be more precise, `Parallel`'ed tasks will be started sequentially and run as simultaneously as allowed by the underlying hardware, os and JavaScript runtime. `Parallel` task will be considered `faulted` if at least one of the atomic `Task`'s
+Last, but not least `Task`'s can be run in "parallel" or, at least, concurrently. To be more precise, `Parallel`'ed tasks will be started sequentially and run as simultaneously as allowed by the underlying hardware, os and JavaScript runtime. `Parallel` task will be considered `faulted` if at least one of the atomic `Task`'s
 fails. Unlike `Promise.all` it will continue running until all the tasks are completed and return a list of results.
 
 ```typescript
