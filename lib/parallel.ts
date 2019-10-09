@@ -1,5 +1,6 @@
-import { TaskDef, _, Options } from './types';
-import { Task, isFaulted, Option } from '../lib';
+import { TaskDef, _, Options } from "./types";
+import { Task } from "./task";
+import { isFaulted, Option } from "./options";
 
 const { Faulted } = Option;
 
