@@ -1,6 +1,6 @@
 {
   "name": "@recubed/task",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Functional promise",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
