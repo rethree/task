@@ -51,4 +51,5 @@ export const fail = <a>(fault: a) =>
     )
   );
 
-export const Task = <a>(action: (fa: Func<a, void>) => void) => task(action);
+export const Task = <a>(action: (fa: Func<a | Promise<a>, void>) => void) =>
+  task(action);
