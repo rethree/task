@@ -1,5 +1,5 @@
 import delay from 'delay';
-import { Parallel, Task, complete, fail, Option } from '../lib';
+import { complete, fail, Option, Parallel, Task } from '../lib';
 
 const { Completed, Faulted } = Option;
 
@@ -21,7 +21,7 @@ test('all-successful parallel is considered successful', async () => {
 
   expect(res).toStrictEqual(
     Completed({
-      value: [ Completed({ value: 42 }), Completed({ value: 9001 }) ]
+      value: [Completed({ value: 42 }), Completed({ value: 9001 })]
     })
   );
 });
@@ -31,7 +31,7 @@ test('all faulted parallel is considered faulted', async () => {
 
   expect(res).toStrictEqual(
     Faulted({
-      fault: [ Faulted({ fault: 42 }), Faulted({ fault: 9001 }) ]
+      fault: [Faulted({ fault: 42 }), Faulted({ fault: 9001 })]
     })
   );
 });
@@ -41,7 +41,7 @@ test('mixed-results parallel is considered faulted', async () => {
 
   expect(res).toStrictEqual(
     Faulted({
-      fault: [ Faulted({ fault: 42 }), Completed({ value: 9001 }) ]
+      fault: [Faulted({ fault: 42 }), Completed({ value: 9001 })]
     })
   );
 });
@@ -50,6 +50,16 @@ test('faulted parallel can be resumed', async () => {
   const res = await Parallel(fail(42), complete(9001)).resume(
     x => x['fault']['length']
   );
+
+  expect(res).toStrictEqual(Completed({ value: 2 }));
+});
+
+test('parallel can be used as a nested task', async () => {
+  const task = Task(f => f(42)).chain(() =>
+    Parallel(fail(42), complete(9001)).resume(x => x['fault']['length'])
+  );
+
+  const res = await task;
 
   expect(res).toStrictEqual(Completed({ value: 2 }));
 });
