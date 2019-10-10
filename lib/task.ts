@@ -1,6 +1,20 @@
-import { next } from './next';
 import { isOption, OptionOf } from './options';
-import { Action, Func, TaskDef } from './types';
+import { tryCatch } from './try-catch';
+import { Action, Func, Next, TaskDef, Thenable } from './types';
+
+const next = <a, b>(
+  action: Action<a>,
+  xf: Func<a, b> | Func<a, Thenable<b>>,
+  fb: Next<b>,
+  resume?: true
+) =>
+  action((x: any) => {
+    OptionOf<a>().match(x, {
+      Completed: async ({ value }) => fb(await tryCatch(xf)(value)),
+      Faulted: async () => (resume ? fb(await tryCatch(xf)(x)) : fb(x)),
+      default: async () => fb(await tryCatch(xf)(x))
+    });
+  });
 
 const task = <a>(action: Action<a>): TaskDef<a> => ({
   map: xf => task(fb => next(action, xf, fb)),
@@ -9,7 +23,15 @@ const task = <a>(action: Action<a>): TaskDef<a> => ({
   then(done) {
     const { Completed, Faulted } = OptionOf<a>();
     try {
-      action((value: any) => {
+      action(async x => {
+        const value = (await tryCatch(x => x)(x)) as any;
+        done(
+          OptionOf<a>().match(value, {
+            Completed: _ => value,
+            Faulted: _ => value,
+            default: _ => Completed({ value })
+          })
+        );
         isOption<a>(value) ? done(value) : done(Completed({ value }));
       });
     } catch (fault) {

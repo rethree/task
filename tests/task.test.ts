@@ -1,25 +1,26 @@
-import { isFaulted, Task } from "../lib";
+import { isFaulted, Task } from '../lib';
+import delay from 'delay';
 
 const queueMicrotask = process.nextTick;
 
-test("Task will execute inital synchronous computation", done => {
+test('Task will execute inital synchronous computation', done => {
   const task = Task(f => {
     f(42);
   });
 
   task.then(option => {
-    expect(option["value"]).toBe(42);
+    expect(option['value']).toBe(42);
     done();
   });
 });
 
-test("Task will execute the initial asynchronous computation", done => {
+test('Task will execute the initial asynchronous computation', done => {
   const task = Task(f => {
     setTimeout(() => f(42), 0);
   });
 
   task.then(option => {
-    expect(option["value"]).toBe(42);
+    expect(option['value']).toBe(42);
     done();
   });
 });
@@ -30,21 +31,21 @@ test("Task will execute the initial microtask'ed computation", done => {
   });
 
   task.then(option => {
-    expect(option["value"]).toBe(42);
+    expect(option['value']).toBe(42);
     done();
   });
 });
 
-test("Tasks are awaitable", async () => {
+test('Tasks are awaitable', async () => {
   const task = Task(f => {
     setTimeout(() => f(42), 0);
   });
 
   const option = await task;
-  expect(option["value"]).toBe(42);
+  expect(option['value']).toBe(42);
 });
 
-test("Task will execute mapped synchronous computations", done => {
+test('Task will execute mapped synchronous computations', done => {
   const task = Task<number>(f => {
     f(42);
   })
@@ -52,12 +53,12 @@ test("Task will execute mapped synchronous computations", done => {
     .map(x => x + 50);
 
   task.then(option => {
-    expect(option["value"]).toBe(100);
+    expect(option['value']).toBe(100);
     done();
   });
 });
 
-test("Task will execute chained synchronous computations", done => {
+test('Task will execute chained synchronous computations', done => {
   const task = Task<number>(f => {
     f(42);
   })
@@ -65,12 +66,12 @@ test("Task will execute chained synchronous computations", done => {
     .chain(x => Task(f => f(x + 50)));
 
   task.then(option => {
-    expect(option["value"]).toBe(100);
+    expect(option['value']).toBe(100);
     done();
   });
 });
 
-test("Task will execute chained asynchronous computations", done => {
+test('Task will execute chained asynchronous computations', done => {
   const task = Task<number>(f => {
     f(42);
   })
@@ -78,12 +79,12 @@ test("Task will execute chained asynchronous computations", done => {
     .chain(x => Task(f => queueMicrotask(() => f(x + 50))));
 
   task.then(option => {
-    expect(option["value"]).toBe(100);
+    expect(option['value']).toBe(100);
     done();
   });
 });
 
-test("Task will execute mixed synchronous computations", done => {
+test('Task will execute mixed synchronous computations', done => {
   const task = Task<number>(f => {
     f(42);
   })
@@ -91,12 +92,12 @@ test("Task will execute mixed synchronous computations", done => {
     .map(x => x + 50);
 
   task.then(option => {
-    expect(option["value"]).toBe(100);
+    expect(option['value']).toBe(100);
     done();
   });
 });
 
-test("Task will execute mixed-schedule computations", done => {
+test('Task will execute mixed-schedule computations', done => {
   const task = Task<number>(f => {
     f(42);
   })
@@ -105,58 +106,58 @@ test("Task will execute mixed-schedule computations", done => {
     .chain(x => Task<number>(f => setTimeout(() => f(x + 25), 0)));
 
   task.then(option => {
-    expect(option["value"]).toBe(100);
+    expect(option['value']).toBe(100);
     done();
   });
 });
 
-test("Throwing initial computations will make task jump to completion carrying fault with it", done => {
+test('Throwing initial computations will make task jump to completion carrying fault with it', done => {
   const task = Task<number>(f => {
-    throw Error("sup");
+    throw Error('sup');
     f(42);
   });
 
   task.then(option => {
-    expect(option["fault"]["message"]).toBe("sup");
+    expect(option['fault']['message']).toBe('sup');
     done();
   });
 });
 
-test("Throwing chained task will make task jump to completion carrying fault with it", done => {
+test('Throwing chained task will make task jump to completion carrying fault with it', done => {
   const task = Task<number>(f => {
     f(42);
   })
     .chain(x =>
       Task<number>(f => {
-        throw Error("sup");
+        throw Error('sup');
         f(x + 42);
       })
     )
     .map(x => x + 50);
 
   task.then(option => {
-    expect(option["fault"]["message"]).toBe("sup");
+    expect(option['fault']['message']).toBe('sup');
     done();
   });
 });
 
-test("Throwing synchronous computations will make task jump to completion carrying fault with it", done => {
+test('Throwing synchronous computations will make task jump to completion carrying fault with it', done => {
   const task = Task<number>(f => {
     f(42);
   })
     .chain(x => {
-      throw Error("sup");
+      throw Error('sup');
       return Task<number>(f => f(x + 8));
     })
     .map(x => x + 50);
 
   task.then(option => {
-    expect(option["fault"]["message"]).toBe("sup");
+    expect(option['fault']['message']).toBe('sup');
     done();
   });
 });
 
-test("Throwing computations will continue if told to resume", done => {
+test('Throwing computations will continue if told to resume', done => {
   const task = Task<number>(f => {
     f(42);
   })
@@ -167,12 +168,12 @@ test("Throwing computations will continue if told to resume", done => {
     .resume(x => (isFaulted(x) ? x.fault + 32 : 0));
 
   task.then(option => {
-    expect(option["value"]).toBe(42);
+    expect(option['value']).toBe(42);
     done();
   });
 });
 
-test("Chain accepts promises", done => {
+test('Chain accepts promises', done => {
   const task = Task<number>(f => {
     f(42);
   })
@@ -180,12 +181,12 @@ test("Chain accepts promises", done => {
     .chain(x => Task(f => queueMicrotask(() => f(x + 50))));
 
   task.then(option => {
-    expect(option["value"]).toBe(100);
+    expect(option['value']).toBe(100);
     done();
   });
 });
 
-test("Task execution is sequential", done => {
+test('Task execution is sequential', done => {
   const task = Task<number>(f => {
     f(42);
   })
@@ -195,7 +196,18 @@ test("Task execution is sequential", done => {
     .map(x => x + 11);
 
   task.then(option => {
-    expect(option["value"]).toBe(42);
+    expect(option['value']).toBe(42);
+    done();
+  });
+});
+
+test.only('Initial asynchronous computation is going to get resolved', done => {
+  const task = Task<number>(f => {
+    f(delay(100).then(() => Promise.resolve(42)));
+  });   
+
+  task.then(option => {
+    expect(option['value']).toBe(42);
     done();
   });
 });
