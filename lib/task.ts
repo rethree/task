@@ -23,7 +23,8 @@ const task = <a>(action: Action<a>): TaskDef<a> => ({
   then(done) {
     try {
       action(async x => {
-        done((await tryCatch(x => x)(x)) as any);
+        const value = (await tryCatch(x => x)(x)) as any;
+        done(value);
       });
     } catch (fault) {
       done(OptionOf<a>().Faulted({ fault }));
