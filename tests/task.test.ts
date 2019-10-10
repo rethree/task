@@ -201,13 +201,24 @@ test('Task execution is sequential', done => {
   });
 });
 
-test.only('Initial asynchronous computation is going to get resolved', done => {
+test('Initial promise-returning computation is going to get resolved', done => {
   const task = fromPromise<number>(f => {
     f(delay(100).then(() => Promise.resolve(42)));
   });
 
   task.then(option => {
     expect(option['value']).toBe(42);
+    done();
+  });
+});
+
+test('Initial throwing promise-returning computation is going to get resolved', done => {
+  const task = fromPromise<number>(f => {
+    f(delay(100).then(() => Promise.reject(42)));
+  });
+
+  task.then(option => {
+    expect(option['fault']).toBe(42);
     done();
   });
 });

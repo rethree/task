@@ -1,5 +1,5 @@
-import { OptionOf, isOption } from "./options";
-import { Options, Thenable } from "./types";
+import { OptionOf, isOption } from './options';
+import { Options, Thenable } from './types';
 
 export const tryCatch = <a, b>(
   f: (x: a | Options<a>) => b | Thenable<b>

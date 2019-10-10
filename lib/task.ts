@@ -1,4 +1,4 @@
-import { isOption, OptionOf } from './options';
+import { OptionOf } from './options';
 import { tryCatch } from './try-catch';
 import { Action, Func, Next, TaskDef, Thenable } from './types';
 
@@ -21,21 +21,12 @@ const task = <a>(action: Action<a>): TaskDef<a> => ({
   chain: xf => task(fb => next(action, xf, fb as any)),
   resume: xf => task(fb => next(action, xf, fb, true)),
   then(done) {
-    const { Completed, Faulted } = OptionOf<a>();
     try {
       action(async x => {
-        const value = (await tryCatch(x => x)(x)) as any;
-        done(
-          OptionOf<a>().match(value, {
-            Completed: _ => value,
-            Faulted: _ => value,
-            default: _ => Completed({ value })
-          })
-        );
-        isOption<a>(value) ? done(value) : done(Completed({ value }));
+        done((await tryCatch(x => x)(x)) as any);
       });
     } catch (fault) {
-      done(Faulted({ fault }));
+      done(OptionOf<a>().Faulted({ fault }));
     }
   }
 });
@@ -51,7 +42,7 @@ export const fail = <a>(fault: a) =>
     )
   );
 
+export const Task = <a>(action: (fa: Func<a, void>) => void) => task(action);
+
 export const fromPromise = <a>(action: (fa: Func<Promise<a>, void>) => void) =>
   task(action);
-
-export const Task = <a>(action: (fa: Func<a, void>) => void) => task(action);
