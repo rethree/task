@@ -1,4 +1,4 @@
-import { isFaulted, Task } from '../lib';
+import { isFaulted, Task, fromPromise } from '../lib';
 import delay from 'delay';
 
 const queueMicrotask = process.nextTick;
@@ -202,9 +202,9 @@ test('Task execution is sequential', done => {
 });
 
 test.only('Initial asynchronous computation is going to get resolved', done => {
-  const task = Task<number>(f => {
+  const task = fromPromise<number>(f => {
     f(delay(100).then(() => Promise.resolve(42)));
-  });   
+  });
 
   task.then(option => {
     expect(option['value']).toBe(42);
