@@ -32,7 +32,7 @@ console.log(x);
 // { tag: 'completed', value: 42 }
 ```
 
-Completed and faulted `Task`'s can also be created using the `complete` and `fail` unary constructors respectively. If the initial computation is supposed to run a promise, it the `fromPromise` constructor can be of help.
+Completed and faulted `Task`'s can also be created using the `complete` and `fail` unary constructors respectively. If the initial computation is supposed to run a promise, the `fromPromise` constructor can be of help.
 
 
 `Task` definition allows 'free' (lazy) mapping (`raw value -> raw value`), chaining (`raw value -> Task | Promise`) and mixing these two. Functions are guaranteed to be run sequentially (in declaration order) whether they are asynchronous or not.
