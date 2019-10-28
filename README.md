@@ -85,7 +85,7 @@ console.log(x);
 // { tag: 'completed', value: 42 } }
 ```
 
-Last, but not least `Task`'s can be run in "parallel" or concurrently. To be more precise, `Parallel`'ed tasks run within `Promise.all` with the same set of guarantees on the top of the being "unrejectable". Unlike `Promise.all` and like `Promise.allSettled` it will continue running until all the tasks are completed and return a list of results (including failures).
+Last, but not least `Task`'s can be run in "parallel" or concurrently. To be more precise, `Parallel`'ed tasks run within `Promise.all` with the same set of guarantees on the top of being "unrejectable". Unlike `Promise.all` and like `Promise.allSettled` it will continue running until all the tasks are completed and return a list of results (including failures).
 
 ```typescript
 const option = await Parallel(complete(10), fail(42));
